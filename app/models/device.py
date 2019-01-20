@@ -14,7 +14,7 @@ class Device(db.Model):
     device_model = db.Column(db.ForeignKey("device_model.name"))
     device_sim = db.Column(db.String(128), unique=True)
     model = db.relationship("DeviceModel")
-    customer = db.Column(db.ForeignKey("customer.name"))
+    project = db.Column(db.ForeignKey("project.name"))
     secret = db.Column(db.String(128))
     mongo_slice = db.Column(db.INTEGER)
     longitude = db.Column(db.String(32))
@@ -110,7 +110,7 @@ class Device(db.Model):
         return device
 
     @staticmethod
-    def create_device(device_sim, device_model, customer):
+    def create_device(device_sim, device_model, project):
 
         device = Device(
             device_name='未命名设备',
@@ -121,7 +121,7 @@ class Device(db.Model):
             location="",
             longitude="",
             latitude="",
-            customer=customer,
+            project=project,
             mongo_slice=0,
             network_status='online',
             device_status=0,
@@ -138,7 +138,7 @@ class DeviceSchema(Schema):
     device_id = fields.String()
     device_name = fields.String()
     device_model = fields.String()
-    customer = fields.String()
+    project = fields.String()
     secret = fields.String()
     longitude = fields.String()
     latitude = fields.String()

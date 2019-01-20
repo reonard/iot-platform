@@ -4,6 +4,7 @@ from app.models.device import Device
 from app.models.device_model import DeviceModel
 from app.models.metric_config import MetricConfig
 from app.models.metric_type import MetricType
+from app.models.project import Project
 import datetime
 
 
@@ -14,8 +15,10 @@ def db_data(app):
         db.create_all()
 
         c = Customer(name="pilot", description="珠海派诺")
+        p = Project(name="test", description="测试项目", customer=c)
         md = DeviceModel(name='model911', description='型号1')
         db.session.add(c)
+        db.session.add(p)
         db.session.add(md)
         db.session.add(Device(
             device_id=1,
@@ -27,7 +30,7 @@ def db_data(app):
             location="珠海丽景大宾馆",
             longitude="10'123'123",
             latitude="10'123'123",
-            customer=c,
+            project=p,
             mongo_slice=0,
             network_status='online',
             device_status=0,
