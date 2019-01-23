@@ -2,8 +2,13 @@ from flask import Blueprint, request
 from flask_restful import Resource, Api, current_app
 from app.models.device import Device, DeviceSchema
 from app.models.device_model import DeviceModel, DeviceModelSchema
+from app.models.customer import Customer
+from app.models.project import Project
+from app.lib.mongo import get_mongo_data
 from app.utils.http_utils import obj_response, response, get_req_param
-from app.lib.const import DeviceStatus
+from app.lib.const import DeviceStatus,DeviceStatusCN,MONGO_ALARM_COLLECTION
+from sqlalchemy import func
+from app import db
 
 mod = Blueprint('device', __name__)
 mod_api = Api(mod)
@@ -76,9 +81,48 @@ class DeviceAlarmList(Resource):
         exclude = ('metric_types',)
         return obj_response(data=devices, schema=DeviceSchema(exclude=exclude), many=True)
 
+class DeviceStatusCount(Resource):
+    def get(self):
+        exclude = ('metric_types',)
+
+        #data = Device.query(func.count("device_id"))#.group_by("device_status")
+        customer_name = "pilot"
+        data = []
+        for p in Customer.query.filter_by(name = customer_name).one().projects:
+            project_name = p.name
+            objs = db.session.query(Device.device_status, func.Count(Device.device_id)).filter(Device.project == project_name)\
+                .group_by(Device.device_status).all()
+            for obj in objs:
+                data.append({DeviceStatusCN.get(obj[0],u"未知"):obj[1]})
+        return response(data=data)
+
+class DeviceOverview(Resource):
+    def get(self):
+        exclude = ('metric_types',)
+
+        #data = Device.query(func.count("device_id"))#.group_by("device_status")
+        customer_name = "pilot"
+        data = {}
+
+        alarm_sum = len(get_mongo_data(collection=MONGO_ALARM_COLLECTION, search={"customer": customer_name}))
+
+        project_sum = Project.query.filter_by(customer = customer_name).count()
+
+        device_sum = 0
+        for p in Customer.query.filter_by(name = customer_name).one().projects:
+            project_name = p.name
+            device_sum += Device.query.filter_by(project=project_name).count()
+        data["alarm_sum"] = alarm_sum
+        data["project_sum"] = project_sum
+        data["device_sum"] = device_sum
+        print (data)
+        return response(data=data)
+
 
 mod_api.add_resource(DeviceRegister, '/register/')
 mod_api.add_resource(DeviceList, '/list/')
 mod_api.add_resource(DeviceModelList, '/device_model/list/')
 mod_api.add_resource(DeviceDetail, '/detail/<device_id>/')
 mod_api.add_resource(DeviceAlarmList, '/list/alarm/')
+mod_api.add_resource(DeviceStatusCount, '/status/count')
+mod_api.add_resource(DeviceOverview, '/overview')

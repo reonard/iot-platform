@@ -1,6 +1,6 @@
 from app import db
 from marshmallow import Schema, fields
-
+from app.models.project import Project
 
 class Customer(db.Model):
 
