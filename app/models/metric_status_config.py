@@ -3,7 +3,9 @@ from app import db
 
 class MetricStatusConfig(db.Model):
 
-    metric_id = db.Column(db.ForeignKey("metric_config.metric_id"))
+    __tablename__ = "t_metric_status_config"
+
+    metric_id = db.Column(db.ForeignKey("t_metric_config.metric_id"))
     metric_status_value = db.Column(db.Integer)
     metric_status_description = db.Column(db.String(64))
 

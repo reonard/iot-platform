@@ -1,6 +1,6 @@
-import cgi
 from flask import request
 import json
+from app.lib.message import ResponseCode
 
 HTTP_JSON_CONTENT = {'Content-type': 'application/json'}
 
@@ -15,20 +15,18 @@ def get_req_param(key, default=None):
     return json.loads(req_data).get(key, default)
 
 
-def response(error=None, data=None, code=200):
-
-    if code != 200:
-        return None, code, HTTP_JSON_CONTENT
+def response(data=None, error=None, code=200, biz_code=ResponseCode.OK):
 
     success = True if not error else False
 
     resp = {
+        "code": biz_code,
         "success": success,
         "data": data,
         "msg": error
     }
 
-    return resp, 200, HTTP_JSON_CONTENT
+    return resp, code, HTTP_JSON_CONTENT
 
 
 def obj_response(data, schema, many=False):
@@ -39,3 +37,14 @@ def obj_response(data, schema, many=False):
         return response(error='invalid obj')
 
     return response(data=dump_res.data)
+
+
+def redirect(redirect_url, code=301):
+
+    headers = {}
+
+    headers.update({"location": redirect_url})
+    headers.update(HTTP_JSON_CONTENT)
+
+    return None, code, headers
+

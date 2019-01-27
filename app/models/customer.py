@@ -1,14 +1,27 @@
 from app import db
 from marshmallow import Schema, fields
-from app.models.project import Project
+from sqlalchemy.orm import relationship
+
 
 class Customer(db.Model):
+    """
+    合并project和customer
+    """
 
-    name = db.Column(db.String(128), primary_key=True)
-    description = db.Column(db.String(256))
-    projects = db.relationship("Project")
+    __tablename__ = "t_customer"
 
-    def __str__(self):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(128))
+    type = db.Column(db.String(64))
+    parent_id = db.Column(db.ForeignKey("t_customer.id"))
+
+    parent = relationship("Customer", lazy='joined', join_depth=1, remote_side=[id], uselist=False)
+    children = relationship("Customer", lazy='joined', join_depth=1)
+
+    user_permissions = relationship("UserPermission", lazy='joined')
+
+    def __repr__(self):
+
         return self.name
 
 

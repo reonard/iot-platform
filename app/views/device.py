@@ -3,14 +3,15 @@ from flask_restful import Resource, Api, current_app
 from app.models.device import Device, DeviceSchema
 from app.models.device_model import DeviceModel, DeviceModelSchema
 from app.models.customer import Customer
-from app.models.project import Project
 from app.lib.mongo import get_mongo_data
 from app.utils.http_utils import obj_response, response, get_req_param
-from app.lib.const import DeviceStatus,DeviceStatusCN,MONGO_ALARM_COLLECTION
+from app.lib.const import DeviceStatus, DeviceStatusCN,MONGO_ALARM_COLLECTION
 from sqlalchemy import func
 from app import db
+from app.lib.auth import check_login
 
 mod = Blueprint('device', __name__)
+mod.before_request(check_login)
 mod_api = Api(mod)
 
 
@@ -23,7 +24,7 @@ class DeviceRegister(Resource):
             return response("Missing SimCode")
 
         try:
-            device = Device.create_device(device_sim, 'model911', 'pilot')
+            device = Device.create_device(device_sim, 'model911', 2)
         except Exception as ex:
             print(ex)
             return response(error='Could not create device')
@@ -106,14 +107,14 @@ class DeviceOverview(Resource):
 
         alarm_sum = len(get_mongo_data(collection=MONGO_ALARM_COLLECTION, search={"customer": customer_name}))
 
-        project_sum = Project.query.filter_by(customer = customer_name).count()
+        # project_sum = Project.query.filter_by(customer = customer_name).count()
 
         device_sum = 0
         for p in Customer.query.filter_by(name = customer_name).one().projects:
             project_name = p.name
             device_sum += Device.query.filter_by(project=project_name).count()
         data["alarm_sum"] = alarm_sum
-        data["project_sum"] = project_sum
+        # data["project_sum"] = project_sum
         data["device_sum"] = device_sum
         print (data)
         return response(data=data)

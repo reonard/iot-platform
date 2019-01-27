@@ -15,8 +15,10 @@ from bson import ObjectId
 import json
 import datetime
 import time
+from app.lib.auth import check_login
 
 mod = Blueprint('alarm_data', __name__)
+mod.before_request(check_login)
 mod_api = Api(mod)
 
 
@@ -92,7 +94,11 @@ class AlarmLatestInfo(Resource):
         if not device:
             return response(code=404)
 
-        alarm = device.latest_alarm().get('data')[0]
+        alarm = []
+
+        latest_alarm = device.latest_alarm()
+        if latest_alarm:
+            alarm = latest_alarm.get('data')[0]
 
         alarm_detail = defaultdict(lambda: list())
 
@@ -110,9 +116,8 @@ class AlarmLatestInfo(Resource):
 
         res = [alarm_detail.get(metric_type, []) for metric_type in device.metric_types]
 
-        print(res)
-
         return response(data=res)
+
 
 class AlarmCount(Resource):
 

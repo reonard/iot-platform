@@ -3,7 +3,7 @@ from app.utils import create_data
 
 app = create_app()
 
-# create_data.db_data(app)
+create_data.db_data(app)
 
 
 if __name__ == '__main__':

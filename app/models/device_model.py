@@ -5,6 +5,8 @@ from sqlalchemy.orm.exc import NoResultFound
 
 class DeviceModel(db.Model):
 
+    __tablename__ = "t_device_model"
+
     name = db.Column(db.String(64), primary_key=True)
     description = db.Column(db.String(256))
 

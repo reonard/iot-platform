@@ -9,12 +9,14 @@ import datetime
 
 class Device(db.Model):
 
+    __tablename__ = "t_device"
+
     device_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     device_name = db.Column(db.String(128))
-    device_model = db.Column(db.ForeignKey("device_model.name"))
+    device_model = db.Column(db.ForeignKey("t_device_model.name"))
     device_sim = db.Column(db.String(128), unique=True)
     model = db.relationship("DeviceModel")
-    project = db.Column(db.ForeignKey("project.name"))
+    project = db.Column(db.ForeignKey("t_customer.id"))
     secret = db.Column(db.String(128))
     mongo_slice = db.Column(db.INTEGER)
     longitude = db.Column(db.String(32))

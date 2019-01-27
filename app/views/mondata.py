@@ -7,8 +7,10 @@ from collections import defaultdict
 from app.utils.http_utils import response
 from app.lib.mongo import get_mongo_data
 import datetime
+from app.lib.auth import check_login
 
 mod = Blueprint('mondata', __name__)
+mod.before_request(check_login)
 mod_api = Api(mod)
 
 
@@ -34,6 +36,7 @@ class MonData(Resource):
         for i in dev.mon_data():
 
             x_data.append(format_unixtime(int(i.get('timestamp'))))
+            print(i)
             for mt in metric_configs:
                 mon_data = i['data'][0].get(mt.metric_key, 0)
                 metric_data[mt.metric_display_name].append(mon_data)

@@ -7,6 +7,12 @@ MONGO_ORDER_ASC = pymongo.ASCENDING
 MONGO_ORDER_DESC = pymongo.DESCENDING
 
 
+class CustomerType:
+
+    Vendor = "工程商"
+    Project = "项目"
+
+
 class DeviceStatus:
 
     STATUS_NORMAL = 0
@@ -23,3 +29,5 @@ DeviceStatusCN = {
     DeviceStatus.STATUS_OFFLINE: "下线",
     DeviceStatus.STATUS_ERROR: "故障"
 }
+
+
