@@ -63,7 +63,23 @@ class DeviceDetail(Resource):
         if not device:
             return response(code=404)
 
-        return obj_response(data=device, schema=DeviceSchema())
+        current_mon_data = []
+
+        mon_data = device.last_mon_data()
+        if mon_data:
+            for metric_config in device.metrics():
+                m_key = metric_config.metric_key
+                current_mon_data.append({
+                    "metric_name": metric_config.metric_display_name,
+                    "metric_unit": metric_config.type.type_unit,
+                    "metric_value": mon_data['data'][0].get(m_key)})
+
+        device_info = DeviceSchema().dump(device).data
+
+        return response(data={
+            "mon_data": current_mon_data,
+            "device_detail": device_info
+        })
 
 
 class DeviceAlarmList(Resource):

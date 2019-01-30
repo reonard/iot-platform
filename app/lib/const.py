@@ -11,6 +11,7 @@ class CustomerType:
 
     Vendor = "工程商"
     Project = "项目"
+    Super = "管理方"
 
 
 class DeviceStatus:

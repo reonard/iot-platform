@@ -36,7 +36,6 @@ class MonData(Resource):
         for i in dev.mon_data():
 
             x_data.append(format_unixtime(int(i.get('timestamp'))))
-            print(i)
             for mt in metric_configs:
                 mon_data = i['data'][0].get(mt.metric_key, 0)
                 metric_data[mt.metric_display_name].append(mon_data)
@@ -59,7 +58,6 @@ class MonDataRealTime(Resource):
             return 'no such device found'
 
         metric_data = {}
-        last_data = None
 
         metric_configs = dev.metrics()
 
@@ -69,39 +67,29 @@ class MonDataRealTime(Resource):
 
             x_data.append(format_unixtime(int(i.get('timestamp')), "%H:%M:%S"))
 
-            last_data = i['data'][0]
-
             for mt in metric_configs:
 
                 metric_type_name = mt.type.type_name
+                metric_unit = mt.type.type_unit
 
                 mon_data = i['data'][0].get(mt.metric_key, 0)
 
                 if metric_type_name not in metric_data:
-                    metric_data[metric_type_name] = defaultdict(lambda: list())
+                    metric_data[metric_type_name] = {'unit': metric_unit, 'data': defaultdict(lambda: list())}
 
-                metric_data[metric_type_name][mt.metric_display_name].append(mon_data)
+                metric_data[metric_type_name]['data'][mt.metric_display_name].append(mon_data)
 
         for m_type, m_metric_configs in metric_data.items():
 
-            m_type_data = {'name': m_type, 'legends': [], 'values': []}
+            m_type_data = {'name': m_type, 'legends': [], 'unit': m_metric_configs['unit'], 'values': []}
 
-            for metric, metric_data in m_metric_configs.items():
+            for metric, metric_data in m_metric_configs['data'].items():
                 m_type_data['legends'].append(metric)
                 m_type_data['values'].append(metric_data)
 
             y_data.append(m_type_data)
 
-        instrument = {"max": 1000, "rangeStart": 0.50, "data": []}
-
-        if last_data:
-
-            instrument["data"].append({
-                "value": last_data.get('CA'),
-                "name": "电流"
-            })
-
-        return response(data={'x_data': x_data, 'y_data': y_data, 'instrument': instrument})
+        return response(data={'x_data': x_data, 'y_data': y_data})
 
 
 class MonDataList(Resource):
