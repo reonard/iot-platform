@@ -26,6 +26,7 @@ def register_filter():
             insp = inspect(ent['entity'])
             mapper = getattr(insp, 'mapper', None)
             if mapper and mapper.class_ == Device:
+                # 暂时先这样，如果效率不行直接在这里join， 不用in
                 query = query.enable_assertions(False).join(Customer).\
                     filter(Customer.name.in_(current_user_info.viewable_projects))
             if mapper and mapper.class_ == IssueMsg:

@@ -87,20 +87,22 @@ class Device(db.Model):
                              start=start,
                              end=end,
                              limit=limit,
-                             order=[('timestamp', MONGO_ORDER_ASC)])
+                             order=[('timestamp', MONGO_ORDER_DESC)])
+
+        res.reverse()
 
         return res
 
-    def last_mon_data(self, interval=None, **search):
+    def last_mon_data(self):
 
         criteria = {"deviceid": self.device_id}
 
-        res = get_mongo_data(collection=get_collection(interval),
+        res = get_mongo_data(collection="last_metric",
                              search=criteria,
                              limit=1,
                              order=[('timestamp', MONGO_ORDER_ASC)])
-
-        return res
+        if res:
+            return res[0]
 
     def alarm_data(self, start=None, end=None, **search):
 
