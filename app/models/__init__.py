@@ -7,3 +7,4 @@ from .user_permission import UserPermission
 from .role import Role
 from .user import User
 from .alarm import Alarm
+from .issue_config import Config, IssueMsg, IssueStatus

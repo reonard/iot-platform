@@ -1,5 +1,8 @@
 import pymongo
 
+USERNAME = "iot"
+PASSWORD = "f7df980a"
+
 MONGO_METRIC_COLLECTION = "metric_data"
 MONGO_ALARM_COLLECTION = "alarm_data"
 
@@ -15,6 +18,7 @@ class CustomerType:
 
 class DeviceStatus:
 
+    STATUS_UNINSTALLED = -1
     STATUS_NORMAL = 0
     STATUS_WARN = 1
     STATUS_ALARM = 2
@@ -23,6 +27,7 @@ class DeviceStatus:
 
 
 DeviceStatusCN = {
+    DeviceStatus.STATUS_UNINSTALLED: "待安装",
     DeviceStatus.STATUS_NORMAL: "正常",
     DeviceStatus.STATUS_WARN: "预警",
     DeviceStatus.STATUS_ALARM: "告警",

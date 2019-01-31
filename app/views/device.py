@@ -5,26 +5,42 @@ from app.models.device_model import DeviceModel, DeviceModelSchema
 from app.models.customer import Customer
 from app.lib.mongo import get_mongo_data
 from app.utils.http_utils import obj_response, response, get_req_param
-from app.lib.const import DeviceStatus, DeviceStatusCN,MONGO_ALARM_COLLECTION
+from app.lib.const import DeviceStatus, DeviceStatusCN,MONGO_ALARM_COLLECTION,USERNAME,PASSWORD
 from sqlalchemy import func
 from app import db
-from app.lib.auth import check_login
+from app.lib.auth import check_login,login_required
+from app.lib.auth import current_user_info
+
+import datetime
+import hashlib
 
 mod = Blueprint('device', __name__)
 mod.before_request(check_login)
 mod_api = Api(mod)
 
-
 class DeviceRegister(Resource):
 
     def post(self):
 
-        device_sim = get_req_param('SimCode')
-        if not device_sim:
+        device_sim = request.form.get('SimCode','')
+        once = request.form.get('Once','')
+        sign = request.form.get('Sign','')
+
+        if sign != hashlib.md5((USERNAME+PASSWORD+once).encode("utf8")).hexdigest():
+            return response("unknown device")
+
+        device = Device.query.filter_by(device_sim=device_sim).first()
+
+        if not device_sim or not device:
             return response("Missing SimCode")
 
+        registry_time = datetime.datetime.now()
+
         try:
-            device = Device.create_device(device_sim, 'model911', 2)
+            flag = Device.update_device({"device_sim":device_sim,"device_status":-1}, {"device_status":0,"registry_time":registry_time})
+            if flag != 1:
+                return response(error='fail to register')
+            #device = Device.create_device(device_sim, 'model911', 2)
         except Exception as ex:
             print(ex)
             return response(error='Could not create device')
@@ -36,13 +52,24 @@ class DeviceRegister(Resource):
 
 
 class DeviceList(Resource):
-
+    @login_required
     def get(self):
 
-        devices = Device.query.filter_by(**request.args)
+        Page = request.args.get("Page",1)
+        PageSize = request.args.get("PageSize",10)
+
+        q = {}
+        for key,v in request.args.items():
+            if key in dir(Device):
+                q[key] = v
+        BaseQuery = Device.query.filter_by(**q)
+
+        total = BaseQuery.count()
+        print (total)
+        devices = BaseQuery.order_by(Device.registry_time.desc()).paginate(int(Page),int(PageSize))
 
         exclude = ('metric_types',)
-        return obj_response(data=devices, schema=DeviceSchema(exclude=exclude), many=True)
+        return obj_response(data=devices.items, schema=DeviceSchema(exclude=exclude), many=True)
 
 
 class DeviceModelList(Resource):
@@ -98,25 +125,29 @@ class DeviceStatusCount(Resource):
         return response(data=data)
 
 class DeviceOverview(Resource):
+    @login_required
     def get(self):
         exclude = ('metric_types',)
 
         #data = Device.query(func.count("device_id"))#.group_by("device_status")
         customer_name = "pilot"
         data = {}
+        print ("================")
+        print (current_user_info.viewable_projects)
 
         alarm_sum = len(get_mongo_data(collection=MONGO_ALARM_COLLECTION, search={"customer": customer_name}))
 
         # project_sum = Project.query.filter_by(customer = customer_name).count()
 
         device_sum = 0
-        for p in Customer.query.filter_by(name = customer_name).one().projects:
-            project_name = p.name
-            device_sum += Device.query.filter_by(project=project_name).count()
+        #for p in Customer.query.filter_by(name = customer_name).one().projects:
+        project_name = "pilot"#p.name
+        device_sum += Device.query.filter_by(project=project_name).count()
         data["alarm_sum"] = alarm_sum
         # data["project_sum"] = project_sum
         data["device_sum"] = device_sum
-        print (data)
+
+
         return response(data=data)
 
 

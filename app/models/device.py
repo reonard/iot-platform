@@ -8,6 +8,33 @@ import datetime
 
 
 class Device(db.Model):
+    '''
+    CREATE TABLE `t_device` (
+  `device_id` int(11) NOT NULL AUTO_INCREMENT,
+  `device_name` varchar(128) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `device_model` varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `device_sim` varchar(128) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `project` int(11) DEFAULT NULL,
+  `config_id` int(11) DEFAULT NULL,
+  `secret` varchar(128) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `mongo_slice` int(11) DEFAULT NULL,
+  `longitude` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `latitude` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `location` varchar(256) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `registry_time` timestamp NULL DEFAULT NULL,
+  `network_status` varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `device_status` int(11) DEFAULT NULL,
+  `status_time` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`device_id`),
+  UNIQUE KEY `device_sim` (`device_sim`),
+  KEY `device_model` (`device_model`),
+  KEY `project` (`project`),
+  KEY `config_id` (`config_id`),
+  CONSTRAINT `t_device_ibfk_1` FOREIGN KEY (`device_model`) REFERENCES `t_device_model` (`name`),
+  CONSTRAINT `t_device_ibfk_2` FOREIGN KEY (`project`) REFERENCES `t_customer` (`id`),
+  CONSTRAINT `t_device_ibfk_3` FOREIGN KEY (`config_id`) REFERENCES `t_device_config` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+    '''
 
     __tablename__ = "t_device"
 
@@ -26,6 +53,7 @@ class Device(db.Model):
     network_status = db.Column(db.String(64))
     device_status = db.Column(db.INTEGER)
     status_time = db.Column(db.TIMESTAMP)
+    config_id = db.Column(db.ForeignKey("t_device_config.id"))
 
     def __str__(self):
         return self.device_id
@@ -112,6 +140,18 @@ class Device(db.Model):
         return device
 
     @staticmethod
+    def get_more_device(project):
+
+        devices = []
+
+        try:
+            devices = Device.query.filter_by(project=project).all()
+        except NoResultFound:
+            print("Project %s device Not Found", project)
+
+        return devices
+
+    @staticmethod
     def create_device(device_sim, device_model, project):
 
         device = Device(
@@ -134,6 +174,12 @@ class Device(db.Model):
         db.session.commit()
         return device
 
+    @staticmethod
+    def update_device(q, v):
+        flag = Device.query.filter_by(**q).update(v)
+        db.session.commit()
+        return flag
+
 
 class DeviceSchema(Schema):
 
@@ -150,6 +196,7 @@ class DeviceSchema(Schema):
     network_status = fields.String()
     metric_types = fields.List(fields.String())
     status_time = fields.DateTime()
+    config_id = fields.String()
 
 
 if __name__ == '__main__':

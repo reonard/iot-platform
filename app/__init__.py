@@ -48,9 +48,10 @@ def create_app():
 
 def configure_blueprint(app):
 
-    from app.views import mondata, device, alarm_data, auth
+    from app.views import mondata, device, alarm_data, auth, issue
 
     app.register_blueprint(mondata.mod, url_prefix='/mondata')
     app.register_blueprint(device.mod, url_prefix='/device')
     app.register_blueprint(alarm_data.mod, url_prefix='/alarm')
     app.register_blueprint(auth.mod, url_prefix='/auth')
+    app.register_blueprint(issue.mod, url_prefix='/issue')
