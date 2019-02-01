@@ -2,18 +2,11 @@ from flask import Blueprint, request
 from flask_restful import Resource, Api, current_app
 from app.models.issue_config import *
 from app.models.device import Device
-from app.models.device_model import DeviceModel, DeviceModelSchema
 from app.models.customer import Customer
-from app.lib.mongo import get_mongo_data
 from app.utils.http_utils import obj_response, response, get_req_param
-from app.lib.const import DeviceStatus, DeviceStatusCN,MONGO_ALARM_COLLECTION,USERNAME,PASSWORD
-from sqlalchemy import func
-from app import db
 from app.lib.auth import check_login,login_required
 from app.lib.auth import current_user_info
 
-import datetime
-import hashlib
 import json
 
 mod = Blueprint('issue', __name__)
@@ -66,16 +59,17 @@ class IssueConfig(Resource):
         issuemsg = IssueMsg.create_issue_msg(device_config.id, action_type, user_id)
         if devices:
             for device_id in devices:
-                IssueStatus.create_device_config(device_id, issuemsg.id)
-                Device.update_device({"device_id":device_id},{"config_id":device_config.id})
-                #Device.query.filter_by(device_id=device_id).update({"config_id":device_config.id})
+                if Device.get_one_device(device_id):
+                    IssueStatus.create_device_config(device_id, issuemsg.id)
+                    Device.update_device({"device_id":device_id},{"config_id":device_config.id})
+                    #Device.query.filter_by(device_id=device_id).update({"config_id":device_config.id})
         else:
             for obj in  (Customer.query.filter_by(id=project).first().children):
                 for device in (Device.get_more_device(obj.id)):
                     device_id = device.device_id
-
-                    IssueStatus.create_device_config(device_id, issuemsg.id)
-                    Device.update_device({"device_id": device_id}, {"config_id": device_config.id})
+                    if Device.get_one_device(device_id):
+                        IssueStatus.create_device_config(device_id, issuemsg.id)
+                        Device.update_device({"device_id": device_id}, {"config_id": device_config.id})
 
         return response("Issued by the successful.")
 

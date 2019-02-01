@@ -5,6 +5,7 @@ from app.models.device_model import DeviceModel, DeviceModelSchema
 from app.models.customer import Customer
 from app.lib.mongo import get_mongo_data
 from app.utils.http_utils import obj_response, response, get_req_param
+from app.utils.public_utils import xls2dict
 from app.lib.const import DeviceStatus, DeviceStatusCN,MONGO_ALARM_COLLECTION,USERNAME,PASSWORD
 from sqlalchemy import func
 from app import db
@@ -13,6 +14,8 @@ from app.lib.auth import current_user_info
 
 import datetime
 import hashlib
+import os
+import time
 
 mod = Blueprint('device', __name__)
 mod.before_request(check_login)
@@ -166,6 +169,61 @@ class DeviceOverview(Resource):
 
         return response(data=data)
 
+class DeviceImportOne(Resource):
+    @login_required
+    def post(self):
+
+        device_sim = request.form.get('device_sim','')
+        device_name = request.form.get('device_name','未命名设备')
+        location = request.form.get('location','')
+        project = request.form.get('project','')
+
+        if not device_sim or not device_name or not project or not location:
+            return response(error="Required parameter missing")
+
+        if project not in current_user_info.viewable_projects:
+            return response(error="project do not exist")
+
+        project = Customer.get_project_by_name(project)
+        try:
+            device = Device.create_device(device_sim, device_name, location, "model911", project.id)
+        except Exception as ex:
+            print(ex)
+            return response(error='Could not create device')
+
+        return response(data={"device_id": device.device_id})
+
+class DeviceImportMore(Resource):
+    @login_required
+    def post(self):
+        #SIM卡号	设备名	设备地址	项目
+
+        data = request.files['file']
+        filepath = r"/tmp/devices_%s_%s.xlsx"%(current_user_info.id,time.time())
+        data.save(filepath)
+        if not os.path.exists(filepath):
+            return response(error = "Could not create device")
+
+        viewable_projects = current_user_info.viewable_projects
+        devices = xls2dict(filepath)
+        for device in devices:
+            device_sim = device.get("SIM卡号")
+            device_name = device.get("设备名")
+            location = device.get("设备地址")
+            project = device.get("项目")
+            if not device_sim or not device_name or not project or not location:
+                return response(error="Required parameter missing")
+            if project not in viewable_projects:
+                return response(error="project %s do not exist"%project)
+
+            project = Customer.get_project_by_name(project)
+            try:
+                device = Device.create_device(device_sim, device_name, location, "model911", project.id)
+            except Exception as ex:
+                print(ex)
+                return response(error='Could not create device, simCode is %s'%device_sim)
+
+        return response("ok")
 
 mod_api.add_resource(DeviceRegister, '/register/')
 mod_api.add_resource(DeviceList, '/list/')
@@ -174,3 +232,5 @@ mod_api.add_resource(DeviceDetail, '/detail/<device_id>/')
 mod_api.add_resource(DeviceAlarmList, '/list/alarm/')
 mod_api.add_resource(DeviceStatusCount, '/status/count')
 mod_api.add_resource(DeviceOverview, '/overview')
+mod_api.add_resource(DeviceImportOne, '/import/one')
+mod_api.add_resource(DeviceImportMore, '/import/more')

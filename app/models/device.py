@@ -154,21 +154,21 @@ class Device(db.Model):
         return devices
 
     @staticmethod
-    def create_device(device_sim, device_model, project):
+    def create_device(device_sim, device_name, location,  device_model, project):
 
         device = Device(
-            device_name='未命名设备',
+            device_name=device_name,
             device_model=device_model,
             device_sim=device_sim,
             secret="12345",
             registry_time=datetime.datetime.now(),
-            location="",
+            location=location,
             longitude="",
             latitude="",
             project=project,
             mongo_slice=0,
             network_status='online',
-            device_status=0,
+            device_status=-1,
             status_time=datetime.datetime.now()
         )
 

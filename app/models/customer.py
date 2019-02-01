@@ -24,6 +24,11 @@ class Customer(db.Model):
 
         return self.name
 
+    @staticmethod
+    def get_project_by_name(name):
+        project = Customer.query.filter_by(name = name).first()
+        return project
+
 
 class CustomerSchema(Schema):
 
