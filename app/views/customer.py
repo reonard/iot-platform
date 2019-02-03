@@ -52,7 +52,6 @@ class CustomerUser(Resource):
 
         return obj_response(data=users, schema=UserSchema(), many=True)
 
-#
+
 mod_api.add_resource(CustomerList, '/list/')
 mod_api.add_resource(CustomerUser, '/user/<int:cid>')
-# mod_api.add_resource(UserInfo, '/userinfo/')
