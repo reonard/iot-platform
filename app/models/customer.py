@@ -15,8 +15,10 @@ class Customer(db.Model):
     type = db.Column(db.String(64))
     parent_id = db.Column(db.ForeignKey("t_customer.id"))
 
+    # parent = relationship("Customer", lazy='joined', join_depth=1, remote_side=[id], uselist=False)
+    # children = relationship("Customer", lazy='joined', join_depth=1)
     parent = relationship("Customer", lazy='joined', join_depth=1, remote_side=[id], uselist=False)
-    children = relationship("Customer", lazy='joined', join_depth=1)
+    children = relationship("Customer", lazy='dynamic', )
 
     user_permissions = relationship("UserPermission", lazy='joined')
 
@@ -31,6 +33,6 @@ class Customer(db.Model):
 
 
 class CustomerSchema(Schema):
-
+    id = fields.Integer()
     name = fields.Str()
-    description = fields.Str()
+    type = fields.Str()

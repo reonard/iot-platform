@@ -1,4 +1,5 @@
 from app import db
+from marshmallow import Schema, fields
 
 
 class UserPermission(db.Model):
@@ -14,5 +15,3 @@ class UserPermission(db.Model):
 
     def __repr__(self):
         return self.role.name
-
-
