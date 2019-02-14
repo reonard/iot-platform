@@ -68,11 +68,11 @@ class DeviceList(Resource):
         BaseQuery = Device.query.filter_by(**q)
 
         total = BaseQuery.count()
-        print (total)
+
         devices = BaseQuery.order_by(Device.registry_time.desc()).paginate(int(Page),int(PageSize))
 
         exclude = ('metric_types',)
-        return obj_response(data=devices.items, schema=DeviceSchema(exclude=exclude), many=True)
+        return response(data={"result":DeviceSchema(exclude=exclude).dump(devices.items, many=True).data,"totalPage":devices.pages, "total":total})
 
 
 class DeviceModelList(Resource):
