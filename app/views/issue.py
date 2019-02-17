@@ -13,14 +13,15 @@ mod = Blueprint('issue', __name__)
 mod.before_request(check_login)
 mod_api = Api(mod)
 
+
 class IssueConfig(Resource):
     @login_required
     def post(self):
 
-        action_type = request.form.get('action_type','')
-        project = request.form.get('project','')
+        action_type = request.form.get('action_type', '')
+        project = request.form.get('project', '')
         try:
-            devices = json.loads(request.form.get('devices','[]'))
+            devices = json.loads(request.form.get('devices', '[]'))
         except:
             devices = []
 
@@ -55,7 +56,7 @@ class IssueConfig(Resource):
             return response(error = "Missing action")
 
         user_id = current_user_info.id
-        device_config = Config.create_device_config(json.dumps(msg))
+        device_config = DeviceConfig.create_device_config(json.dumps(msg))
         issuemsg = IssueMsg.create_issue_msg(device_config.id, action_type, user_id)
         if devices:
             for device_id in devices:
@@ -88,7 +89,6 @@ class IssueDetail(Resource):
         obj = IssueMsg.query.filter_by(id = id).first()
         data = obj.statuss
 
-        IssueStatusSchema
         exclude = ()
         return obj_response(data=data, schema=IssueStatusSchema(exclude=exclude), many=True)
 

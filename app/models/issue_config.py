@@ -2,39 +2,44 @@ from app import db
 from marshmallow import Schema, fields
 import datetime
 import hashlib
+from sqlalchemy import text
 
-class Config(db.Model):
+
+class DeviceConfig(db.Model):
+
     __tablename__ = "t_device_config"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     configs = db.Column(db.Text)
     version = db.Column(db.String(32))
-
-    create_time = db.Column(db.TIMESTAMP)
     hash = db.Column(db.String(32))
+    create_time = db.Column(db.TIMESTAMP)
     devices = db.relationship("Device")
 
     @staticmethod
     def create_device_config(msg):
         now = datetime.datetime.now()
         hash = hashlib.md5(msg.encode("utf8")).hexdigest()
-        config = Config.query.filter_by(hash = hash).first()
+        config = DeviceConfig.query.filter_by(hash=hash).first()
         if config:
             return config
 
-        config = Config(configs=msg, create_time=now, version=now.strftime("%Y%m%d%H%M%S"), hash = hash)
+        config = DeviceConfig(configs=msg, create_time=now, version=now.strftime("%Y%m%d%H%M%S"), hash=hash)
         db.session.add(config)
         db.session.commit()
         return config
 
+
 class IssueMsg(db.Model):
+
     __tablename__ = "t_issue_msg"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    action_type = db.Column(db.Enum("push","reset","check","config"))
-    config = db.Column(db.ForeignKey("t_device_config.id"))
+    action_type = db.Column(db.Integer, nullable=False)
+    config_id = db.Column(db.ForeignKey("t_device_config.id"))
     created_by = db.Column(db.ForeignKey("t_user.id"))
-    statuss = db.relationship("IssueStatus")
+    create_time = db.Column(db.TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
+    statuses = db.relationship("IssueStatus")
 
     @staticmethod
     def create_issue_msg(config_id, action_type, user_id):
@@ -43,22 +48,18 @@ class IssueMsg(db.Model):
         db.session.commit()
         return issuemsg
 
-class IssueMsgSchema(Schema):
-    id = fields.String()
-    action_type = fields.String()
-    config = fields.String()
-    created_by = fields.String()
-
 
 class IssueStatus(db.Model):
+
     __tablename__ = "t_issue_status"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     device_id = db.Column(db.ForeignKey("t_device.device_id"))
     issue_msg_id = db.Column(db.ForeignKey("t_issue_msg.id"))
     issue_status = db.Column(db.Integer, index=True)
+    success = db.Column(db.Boolean, default=None)
     status_time = db.Column(db.TIMESTAMP)
-    create_time =  db.Column(db.TIMESTAMP, nullable = False)
+    create_time = db.Column(db.TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
 
     @staticmethod
     def create_device_config(device_id, issue_msg_id):
@@ -68,6 +69,14 @@ class IssueStatus(db.Model):
         db.session.commit()
         return status
 
+
+class IssueMsgSchema(Schema):
+    id = fields.String()
+    action_type = fields.String()
+    config = fields.String()
+    created_by = fields.String()
+
+
 class IssueStatusSchema(Schema):
     id = fields.String()
     device_id = fields.String()
@@ -75,6 +84,7 @@ class IssueStatusSchema(Schema):
     issue_status = fields.String()
     status_time = fields.Date()
     create_time = fields.Date()
+
 
 if __name__ == '__main__':
 

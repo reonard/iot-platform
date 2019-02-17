@@ -1,6 +1,6 @@
-from flask import Blueprint
+from flask import Blueprint, request
 from flask_restful import Resource, Api
-from app.utils.http_utils import obj_response, get_req_param, response
+from app.utils.http_utils import obj_response, response
 from app.lib.auth import current_user_info, check_login
 from app.models.customer import CustomerSchema
 from app.models.user import UserSchema, User
@@ -19,7 +19,7 @@ class CustomerList(Resource):
         有点绕，后面优化
         :return:
         """
-        parent_hierarchy = get_req_param("hierarchy", [])
+        parent_hierarchy = request.args.getlist("hierarchy")
 
         children = current_user_info.customer
 
@@ -28,7 +28,7 @@ class CustomerList(Resource):
 
         for p in parent_hierarchy:
 
-            if children and children.id == p:
+            if children and children.id == int(p):
                 continue
 
             if not hasattr(children, "children"):

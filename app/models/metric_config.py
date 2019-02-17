@@ -9,6 +9,7 @@ class MetricConfig(db.Model):
     metric_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     metric_key = db.Column(db.String(32))
     metric_status_key = db.Column(db.String(32))
+    metric_alarm_config_key = db.Column(db.String(32))
     metric_display_name = db.Column(db.String(128))
     metric_type = db.Column(db.ForeignKey("t_metric_type.type_name"))
     device_model = db.Column(db.ForeignKey("t_device_model.name"))
@@ -19,5 +20,10 @@ class MetricConfig(db.Model):
 
 class MetricConfigSchema(Schema):
 
-    name = fields.Str()
-    description = fields.Str()
+    metric_id = fields.Integer()
+    metric_key = fields.Str()
+    metric_alarm_config_key = fields.Str()
+    metric_display_name = fields.Str()
+    metric_unit = fields.Function(lambda obj: obj.type.type_unit)
+
+
