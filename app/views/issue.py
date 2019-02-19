@@ -1,11 +1,12 @@
 from flask import Blueprint, request
 from flask_restful import Resource, Api, current_app
 from app.models.issue_config import *
-from app.models.device import Device
+from app.models import Device, DeviceModel, User
 from app.models.customer import Customer
 from app.utils.http_utils import obj_response, response, get_req_param
-from app.lib.auth import check_login,login_required
+from app.lib.auth import check_login, login_required
 from app.lib.auth import current_user_info
+from app.lib.const import IssueStatusCN
 
 import json
 
@@ -14,84 +15,183 @@ mod.before_request(check_login)
 mod_api = Api(mod)
 
 
+class CreateIssueConfig(Resource):
+    @login_required
+    def post(self):
+        name = get_req_param("name")
+        model = get_req_param("model")
+        m = DeviceModel.query.filter_by(name=model).first()
+        metrics = m.metrics
+        threshold = {
+            "PID": 0
+        }
+        for metric in metrics:
+            value = get_req_param(metric.metric_key)
+            if not value:
+                return response(error="The parameter %s cannot be null" % metric.metric_type)
+            threshold[metric.metric_key] = value
+
+        msg = {
+            "RequestPush": False,
+            "IsReset": False,
+            "IsSelfCheck": False,
+            "ProbeData": [threshold]
+        }
+
+        user_id = current_user_info.id
+        device_config = DeviceConfig.create_device_config(name, json.dumps(msg), user_id)
+
+        return response(data={
+            "id": device_config.id,
+            "name": device_config.name
+        })
+
+
+class UpdateIssueConfig(Resource):
+    @login_required
+    def post(self, config_id):
+        name = get_req_param("name")
+        model = get_req_param("model")
+        m = DeviceModel.query.filter_by(name=model).first()
+        metrics = m.metrics
+        threshold = {
+            "PID": 0
+        }
+        for metric in metrics:
+            value = get_req_param(metric.metric_key)
+            if not value:
+                return response(error="The parameter %s cannot be null" % metric.metric_type)
+            threshold[metric.metric_key] = value
+
+        msg = {
+            "RequestPush": False,
+            "IsReset": False,
+            "IsSelfCheck": False,
+            "ProbeData": [threshold]
+        }
+
+        user_id = current_user_info.id
+        flag = DeviceConfig.update_device_config(config_id, name, json.dumps(msg), user_id)
+        if flag == 1:
+            return response(data="Success")
+        else:
+            return response(error="Failure")
+
+
+class IssueConfigList(Resource):
+
+    @login_required
+    def get(self):
+
+        name = request.args.get("name")
+        if not name:
+            conf_list = DeviceConfig.query.all()
+        else:
+            conf_list = DeviceConfig.query.filter(DeviceConfig.name.ilike("%%%s%%" % name)).all()
+
+        exclude = ()
+        return obj_response(data=conf_list, schema=DeviceConfigSchema(exclude=exclude), many=True)
+
+
+class ConfigInfo(Resource):
+    @login_required
+    def get(self, config_id):
+        obj = DeviceConfig.query.filter_by(id=config_id).first()
+        obj.configs = json.loads(obj.configs)
+        exclude = ()
+        return obj_response(data=obj, schema=DeviceConfigSchema(exclude=exclude), many=False)
+
+
 class IssueConfig(Resource):
     @login_required
     def post(self):
 
-        action_type = request.form.get('action_type', '')
-        project = request.form.get('project', '')
-        try:
-            devices = json.loads(request.form.get('devices', '[]'))
-        except:
-            devices = []
-
-        threshold = {
-            "PID":0,
-            "LA":request.form.get('LA',0),
-            "TA1":request.form.get('TA1',0),
-            "TA2":request.form.get('TA2',0),
-            "TA3":request.form.get('TA3',0),
-            "TA4":request.form.get('TA4',0),
-            "CAA":request.form.get('CAA',0),
-            "CAB":request.form.get('CAB',0),
-            "CAC":request.form.get('CAC',0)
-        }
-
-        msg = {
-        "RequestPush":False,
-        "IsReset":False,
-        "IsSelfCheck":False,
-        "ProbeData":[threshold]
-        }
-
-        if action_type == "config":
-            pass
-        elif action_type == "push":
-            msg["RequestPush"] = True
-        elif action_type == "reset":
-            msg["IsReset"] = True
-        elif action_type == "check":
-            msg["IsSelfCheck"] = True
-        else:
-            return response(error = "Missing action")
+        config_id = get_req_param('config_id', '')
+        project = get_req_param('project', '')
+        action_type = get_req_param('action_type')
+        devices = get_req_param('devices',[])
 
         user_id = current_user_info.id
-        device_config = DeviceConfig.create_device_config(json.dumps(msg))
-        issuemsg = IssueMsg.create_issue_msg(device_config.id, action_type, user_id)
+        device_config = DeviceConfig.query.filter_by(id=config_id).first()
+        issue_msg = IssueMsg.create_issue_msg(device_config.id, action_type, user_id)
         if devices:
             for device_id in devices:
                 if Device.get_one_device(device_id):
-                    IssueStatus.create_device_config(device_id, issuemsg.id)
-                    Device.update_device({"device_id":device_id},{"config_id":device_config.id})
-                    #Device.query.filter_by(device_id=device_id).update({"config_id":device_config.id})
+                    IssueStatus.create_device_config(device_id, issue_msg.id)
+                    Device.update_device({"device_id": device_id}, {"config_id": device_config.id})
         else:
-            for obj in  (Customer.query.filter_by(id=project).first().children):
+            for obj in Customer.query.filter_by(id=project).first().children:
                 for device in (Device.get_more_device(obj.id)):
                     device_id = device.device_id
                     if Device.get_one_device(device_id):
-                        IssueStatus.create_device_config(device_id, issuemsg.id)
+                        IssueStatus.create_device_config(device_id, issue_msg.id)
                         Device.update_device({"device_id": device_id}, {"config_id": device_config.id})
 
         return response("Issued by the successful.")
 
+
 class IssueHistory(Resource):
     @login_required
     def get(self):
-        data = IssueMsg.query.filter_by(**request.args).all()
+        page = request.args.get("Page", 1)
+        pagesize = request.args.get("PageSize", 10)
 
-        exclude = ()
-        return obj_response(data=data, schema=IssueMsgSchema(exclude=exclude), many=True)
+        q = {}
+        for key, v in request.args.items():
+            if key in dir(Device):
+                q[key] = v
+        base_query = IssueMsg.query.filter_by(**q)
+
+        total = base_query.count()
+
+        issue = base_query.order_by(IssueMsg.create_time.desc()).paginate(int(page), int(pagesize))
+
+        result = []
+        for obj in issue.items:
+            item = {}
+            item["id"] = obj.id
+            item["action_type"] = obj.action_type
+            item["create_time"] = obj.create_time.strftime("%Y-%m-%d %H:%M:%S")
+            item["created_by"] = User.query.filter_by(id=int(obj.created_by)).first().name
+            item["config_name"] = DeviceConfig.query.filter_by(id=int(obj.config_id)).first().name
+            result.append(item)
+
+        return response(data={"result": result,
+                              "totalPage": issue.pages, "total": total})
+
 
 class IssueDetail(Resource):
     @login_required
-    def get(self, id):
+    def get(self, msg_id):
 
-        obj = IssueMsg.query.filter_by(id = id).first()
-        data = obj.statuss
+        issue = IssueMsg.query.filter_by(id=msg_id).first()
+        data = issue.statuses
+        result = []
+        for obj in data:
+            item = {}
+            item["id"] = obj.id
+            device = Device.query.filter_by(device_id=obj.device_id).first()
+            item["device_name"] = device.device_name
+            item["location"] = device.location
+            item["issue_status"] = IssueStatusCN.get(obj.issue_status,"")
+            if obj.success is True:
+                item["success"] = "成功"
+            elif obj.success is False:
+                item["success"] = "失败"
+            else:
+                item["success"] = "等待"
+            item["status_time"] = obj.status_time.strftime("%Y-%m-%d %H:%M:%S") if obj.status_time else ""
+            item["create_time"] = obj.create_time.strftime("%Y-%m-%d %H:%M:%S")
 
-        exclude = ()
-        return obj_response(data=data, schema=IssueStatusSchema(exclude=exclude), many=True)
+            result.append(item)
 
+        return response(data=result)
+
+
+mod_api.add_resource(CreateIssueConfig, '/config/create/')
+mod_api.add_resource(UpdateIssueConfig, '/config/update/<int:config_id>/')
+mod_api.add_resource(IssueConfigList, '/config/list/')
+mod_api.add_resource(ConfigInfo, '/config/<int:config_id>/')
 mod_api.add_resource(IssueConfig, '/config/')
 mod_api.add_resource(IssueHistory, '/history/')
-mod_api.add_resource(IssueDetail, '/history/<id>/')
+mod_api.add_resource(IssueDetail, '/history/<int:msg_id>/')

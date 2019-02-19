@@ -21,13 +21,14 @@ mod = Blueprint('device', __name__)
 mod.before_request(check_login)
 mod_api = Api(mod)
 
+
 class DeviceRegister(Resource):
 
     def post(self):
 
-        device_sim = request.form.get('SimCode','')
-        once = request.form.get('Once','')
-        sign = request.form.get('Sign','')
+        device_sim = get_req_param('SimCode','')
+        once = get_req_param('Once','')
+        sign = get_req_param('Sign','')
 
         if sign != hashlib.md5((USERNAME+PASSWORD+once).encode("utf8")).hexdigest():
             return response("unknown device")
@@ -173,10 +174,10 @@ class DeviceImportOne(Resource):
     @login_required
     def post(self):
 
-        device_sim = request.form.get('device_sim','')
-        device_name = request.form.get('device_name','未命名设备')
-        location = request.form.get('location','')
-        project = request.form.get('project','')
+        device_sim = get_req_param('device_sim','')
+        device_name = get_req_param('device_name','未命名设备')
+        location = get_req_param('location','')
+        project = get_req_param.get('project','')
 
         if not device_sim or not device_name or not project or not location:
             return response(error="Required parameter missing")

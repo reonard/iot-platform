@@ -36,4 +36,8 @@ DeviceStatusCN = {
     DeviceStatus.STATUS_ERROR: "故障"
 }
 
-
+IssueStatusCN = {
+    0: "等待下发",
+    1: "已下发",
+    2: "已收到回复"
+}

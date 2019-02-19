@@ -8,7 +8,7 @@ def register_filter():
 
     from app.models.device import Device
     from app.models.customer import Customer
-    from app.models.issue_config import IssueMsg
+    from app.models.issue_config import IssueMsg, DeviceConfig
     from app.lib.auth import current_user_info
 
     @event.listens_for(Query, "before_compile", retval=True)
@@ -31,5 +31,7 @@ def register_filter():
                     filter(Customer.name.in_(current_user_info.viewable_projects))
             if mapper and mapper.class_ == IssueMsg:
                 query = query.enable_assertions(False).filter(IssueMsg.created_by == current_user_info.id)
+            if mapper and mapper.class_ == DeviceConfig:
+                query = query.enable_assertions(False).filter(DeviceConfig.created_by == current_user_info.id)
 
         return query

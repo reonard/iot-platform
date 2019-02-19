@@ -10,24 +10,41 @@ class DeviceConfig(db.Model):
     __tablename__ = "t_device_config"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(50))
     configs = db.Column(db.Text)
     version = db.Column(db.String(32))
     hash = db.Column(db.String(32))
     create_time = db.Column(db.TIMESTAMP)
     devices = db.relationship("Device")
+    created_by = db.Column(db.ForeignKey("t_user.id"))
 
     @staticmethod
-    def create_device_config(msg):
+    def create_device_config(name, msg, created_by):
         now = datetime.datetime.now()
         hash = hashlib.md5(msg.encode("utf8")).hexdigest()
-        config = DeviceConfig.query.filter_by(hash=hash).first()
+        config = DeviceConfig.query.filter_by(hash=hash, name=name).first()
         if config:
             return config
 
-        config = DeviceConfig(configs=msg, create_time=now, version=now.strftime("%Y%m%d%H%M%S"), hash=hash)
+        config = DeviceConfig(created_by=created_by, name=name, configs=msg, create_time=now,
+                              version=now.strftime("%Y%m%d%H%M%S"), hash=hash)
         db.session.add(config)
         db.session.commit()
         return config
+
+    @staticmethod
+    def update_device_config(id, name, msg, created_by):
+        now = datetime.datetime.now()
+        hash = hashlib.md5(msg.encode("utf8")).hexdigest()
+        flag = DeviceConfig.query.filter_by(id=id).update({"created_by": created_by,
+                                                             "name": name,
+                                                             "configs": msg,
+                                                             "create_time": now,
+                                                             "version": now.strftime("%Y%m%d%H%M%S"),
+                                                             "hash": hash})
+
+        db.session.commit()
+        return flag
 
 
 class IssueMsg(db.Model):
@@ -43,7 +60,7 @@ class IssueMsg(db.Model):
 
     @staticmethod
     def create_issue_msg(config_id, action_type, user_id):
-        issuemsg = IssueMsg(config=config_id, action_type=action_type, created_by=user_id)
+        issuemsg = IssueMsg(config_id=config_id, action_type=action_type, created_by=user_id)
         db.session.add(issuemsg)
         db.session.commit()
         return issuemsg
@@ -70,11 +87,23 @@ class IssueStatus(db.Model):
         return status
 
 
+class DeviceConfigSchema(Schema):
+    id = fields.String()
+    name = fields.String()
+    configs = fields.Dict()
+    version = fields.String()
+    hash = fields.String()
+    create_time = fields.Date()
+    created_by = fields.String()
+
+
 class IssueMsgSchema(Schema):
     id = fields.String()
     action_type = fields.String()
     config = fields.String()
     created_by = fields.String()
+    create_time = fields.Date()
+
 
 
 class IssueStatusSchema(Schema):

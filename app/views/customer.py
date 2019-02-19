@@ -53,5 +53,15 @@ class CustomerUser(Resource):
         return obj_response(data=users, schema=UserSchema(), many=True)
 
 
+class CustomerProject(Resource):
+
+    def get(self):
+
+        viewable_projects = current_user_info.viewable_projects
+
+        return response(data=viewable_projects)
+
+
 mod_api.add_resource(CustomerList, '/list/')
 mod_api.add_resource(CustomerUser, '/user/<int:cid>')
+mod_api.add_resource(CustomerProject, '/project/')
