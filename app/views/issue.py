@@ -26,10 +26,10 @@ class CreateIssueConfig(Resource):
             "PID": 0
         }
         for metric in metrics:
-            value = get_req_param(metric.metric_key)
+            value = get_req_param(metric.metric_alarm_config_key)
             if not value:
                 return response(error="The parameter %s cannot be null" % metric.metric_type)
-            threshold[metric.metric_key] = value
+            threshold[metric.metric_alarm_config_key] = value
 
         msg = {
             "RequestPush": False,
@@ -58,10 +58,10 @@ class UpdateIssueConfig(Resource):
             "PID": 0
         }
         for metric in metrics:
-            value = get_req_param(metric.metric_key)
+            value = get_req_param(metric.metric_alarm_config_key)
             if not value:
                 return response(error="The parameter %s cannot be null" % metric.metric_type)
-            threshold[metric.metric_key] = value
+            threshold[metric.metric_alarm_config_key] = value
 
         msg = {
             "RequestPush": False,
