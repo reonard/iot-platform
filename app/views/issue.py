@@ -1,7 +1,7 @@
 from flask import Blueprint, request
 from flask_restful import Resource, Api, current_app
 from app.models.issue_config import *
-from app.models import Device, DeviceModel, User
+from app.models import Device, DeviceModel, User, MetricType
 from app.models.customer import Customer
 from app.utils.http_utils import obj_response, response, get_req_param
 from app.lib.auth import check_login, login_required
@@ -28,7 +28,7 @@ class CreateIssueConfig(Resource):
         for metric in metrics:
             value = get_req_param(metric.metric_alarm_config_key)
             if not value:
-                return response(error="The parameter %s cannot be null" % metric.metric_type)
+                return response(error="%s不能为空" % metric.metric_display_name)
             threshold[metric.metric_alarm_config_key] = value
 
         msg = {
@@ -39,7 +39,7 @@ class CreateIssueConfig(Resource):
         }
 
         user_id = current_user_info.id
-        device_config = DeviceConfig.create_device_config(name, json.dumps(msg), user_id)
+        device_config = DeviceConfig.create_device_config(name, json.dumps(msg), user_id, m.name)
 
         return response(data={
             "id": device_config.id,
@@ -60,7 +60,7 @@ class UpdateIssueConfig(Resource):
         for metric in metrics:
             value = get_req_param(metric.metric_alarm_config_key)
             if not value:
-                return response(error="The parameter %s cannot be null" % metric.metric_type)
+                return response(error="%s不能为空" % metric.metric_display_name)
             threshold[metric.metric_alarm_config_key] = value
 
         msg = {
@@ -71,7 +71,7 @@ class UpdateIssueConfig(Resource):
         }
 
         user_id = current_user_info.id
-        flag = DeviceConfig.update_device_config(config_id, name, json.dumps(msg), user_id)
+        flag = DeviceConfig.update_device_config(config_id, name, json.dumps(msg), user_id, m.name)
         if flag == 1:
             return response(data="Success")
         else:
@@ -97,7 +97,27 @@ class ConfigInfo(Resource):
     @login_required
     def get(self, config_id):
         obj = DeviceConfig.query.filter_by(id=config_id).first()
-        obj.configs = json.loads(obj.configs)
+        configs = json.loads(obj.configs)
+        threshold_value = configs["ProbeData"][0]
+        m = DeviceModel.query.filter_by(name=obj.model_name).first()
+        metrics = m.metrics
+
+        probe_data = []
+        for metric in metrics:
+            item = {}
+            value = threshold_value.get(metric.metric_alarm_config_key)
+            metric_type = MetricType.query.filter_by(type_name=metric.metric_type).first()
+            item["metric_unit"] = metric_type.type_unit
+            item["metric_alarm_config_key"] = metric.metric_alarm_config_key
+            item["metric_key"] = metric.metric_key
+            item["metric_id"] = metric.metric_id
+            item["metric_display_name"] = metric.metric_display_name
+            item["value"] = value
+            probe_data.append(item)
+        configs["ProbeData"] = probe_data
+
+        obj.configs = configs
+
         exclude = ()
         return obj_response(data=obj, schema=DeviceConfigSchema(exclude=exclude), many=False)
 

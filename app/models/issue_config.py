@@ -17,9 +17,10 @@ class DeviceConfig(db.Model):
     create_time = db.Column(db.TIMESTAMP)
     devices = db.relationship("Device")
     created_by = db.Column(db.ForeignKey("t_user.id"))
+    model_name = db.Column(db.ForeignKey("t_device_model.name"))
 
     @staticmethod
-    def create_device_config(name, msg, created_by):
+    def create_device_config(name, msg, created_by, model_name):
         now = datetime.datetime.now()
         hash = hashlib.md5(msg.encode("utf8")).hexdigest()
         config = DeviceConfig.query.filter_by(hash=hash, name=name).first()
@@ -27,13 +28,13 @@ class DeviceConfig(db.Model):
             return config
 
         config = DeviceConfig(created_by=created_by, name=name, configs=msg, create_time=now,
-                              version=now.strftime("%Y%m%d%H%M%S"), hash=hash)
+                              version=now.strftime("%Y%m%d%H%M%S"), hash=hash, model_name=model_name)
         db.session.add(config)
         db.session.commit()
         return config
 
     @staticmethod
-    def update_device_config(id, name, msg, created_by):
+    def update_device_config(id, name, msg, created_by, model_name):
         now = datetime.datetime.now()
         hash = hashlib.md5(msg.encode("utf8")).hexdigest()
         flag = DeviceConfig.query.filter_by(id=id).update({"created_by": created_by,
@@ -41,7 +42,8 @@ class DeviceConfig(db.Model):
                                                              "configs": msg,
                                                              "create_time": now,
                                                              "version": now.strftime("%Y%m%d%H%M%S"),
-                                                             "hash": hash})
+                                                             "hash": hash,
+                                                             "model_name": model_name})
 
         db.session.commit()
         return flag
