@@ -19,6 +19,8 @@ class DeviceConfig(db.Model):
     created_by = db.Column(db.ForeignKey("t_user.id"))
     model_name = db.Column(db.ForeignKey("t_device_model.name"))
 
+    issue_version = db.relationship("IssueMsg", backref="config", lazy="joined")
+
     @staticmethod
     def create_device_config(name, msg, created_by, model_name):
         now = datetime.datetime.now()
@@ -96,7 +98,8 @@ class DeviceConfigSchema(Schema):
     version = fields.String()
     hash = fields.String()
     create_time = fields.Date()
-    created_by = fields.String()
+    created_by = fields.Function(lambda obj: obj.user.name)
+    model_name = fields.String()
 
 
 class IssueMsgSchema(Schema):

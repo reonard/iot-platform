@@ -16,6 +16,8 @@ class User(db.Model):
     email = db.Column(db.String(255), unique=True)
 
     permission = db.relationship("UserPermission", lazy="joined", uselist=False)
+    issue_version = db.relationship("IssueMsg", backref="user", lazy="joined")
+    configs = db.relationship("DeviceConfig", backref="user", lazy="joined")
 
     @classmethod
     def get_user_info(cls, **kwargs):

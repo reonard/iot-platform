@@ -55,6 +55,8 @@ class Device(db.Model):
     status_time = db.Column(db.TIMESTAMP)
     config_id = db.Column(db.ForeignKey("t_device_config.id"))
 
+    issue_history = db.relationship("IssueStatus", backref="device", lazy="joined")
+
     def __str__(self):
         return self.device_id
 

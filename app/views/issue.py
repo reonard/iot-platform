@@ -27,7 +27,7 @@ class CreateIssueConfig(Resource):
         }
         for metric in metrics:
             value = get_req_param(metric.metric_alarm_config_key)
-            if not value:
+            if value is None:
                 return response(error="%s不能为空" % metric.metric_display_name)
             threshold[metric.metric_alarm_config_key] = value
 
@@ -59,7 +59,7 @@ class UpdateIssueConfig(Resource):
         }
         for metric in metrics:
             value = get_req_param(metric.metric_alarm_config_key)
-            if not value:
+            if value is None:
                 return response(error="%s不能为空" % metric.metric_display_name)
             threshold[metric.metric_alarm_config_key] = value
 
@@ -106,8 +106,7 @@ class ConfigInfo(Resource):
         for metric in metrics:
             item = {}
             value = threshold_value.get(metric.metric_alarm_config_key)
-            metric_type = MetricType.query.filter_by(type_name=metric.metric_type).first()
-            item["metric_unit"] = metric_type.type_unit
+            item["metric_unit"] = metric.type.type_unit
             item["metric_alarm_config_key"] = metric.metric_alarm_config_key
             item["metric_key"] = metric.metric_key
             item["metric_id"] = metric.metric_id
@@ -172,8 +171,8 @@ class IssueHistory(Resource):
             item["id"] = obj.id
             item["action_type"] = obj.action_type
             item["create_time"] = obj.create_time.strftime("%Y-%m-%d %H:%M:%S")
-            item["created_by"] = User.query.filter_by(id=int(obj.created_by)).first().name
-            item["config_name"] = DeviceConfig.query.filter_by(id=int(obj.config_id)).first().name
+            item["created_by"] = obj.user.name
+            item["config_name"] = obj.config.name
             result.append(item)
 
         return response(data={"result": result,
@@ -190,7 +189,7 @@ class IssueDetail(Resource):
         for obj in data:
             item = {}
             item["id"] = obj.id
-            device = Device.query.filter_by(device_id=obj.device_id).first()
+            device = obj.device
             item["device_name"] = device.device_name
             item["location"] = device.location
             item["issue_status"] = IssueStatusCN.get(obj.issue_status,"")
