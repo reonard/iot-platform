@@ -102,8 +102,11 @@ class ConfigInfo(Resource):
         m = DeviceModel.query.filter_by(name=obj.model_name).first()
         metrics = m.metrics
 
-        probe_data = []
+        probe_data = {}
         for metric in metrics:
+            if metric.type.type_name not in probe_data:
+                probe_data[metric.type.type_name] = []
+
             item = {}
             value = threshold_value.get(metric.metric_alarm_config_key)
             item["metric_unit"] = metric.type.type_unit
@@ -112,8 +115,8 @@ class ConfigInfo(Resource):
             item["metric_id"] = metric.metric_id
             item["metric_display_name"] = metric.metric_display_name
             item["value"] = value
-            probe_data.append(item)
-        configs["ProbeData"] = probe_data
+            probe_data[metric.type.type_name].append(item)
+        configs["ProbeData"] = [{"name": type_name, "list": probe_data[type_name]} for type_name in probe_data]
 
         obj.configs = configs
 
