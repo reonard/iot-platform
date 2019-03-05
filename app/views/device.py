@@ -177,7 +177,7 @@ class DeviceImportOne(Resource):
         device_sim = get_req_param('device_sim','')
         device_name = get_req_param('device_name','未命名设备')
         location = get_req_param('location','')
-        project = get_req_param.get('project','')
+        project = get_req_param('project','')
 
         if not device_sim or not device_name or not project or not location:
             return response(error="Required parameter missing")
