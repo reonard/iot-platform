@@ -31,15 +31,15 @@ class CreateIssueConfig(Resource):
                 return response(error="%s不能为空" % metric.metric_display_name)
             threshold[metric.metric_alarm_config_key] = value
 
-        msg = {
-            "RequestPush": False,
-            "IsReset": False,
-            "IsSelfCheck": False,
-            "ProbeData": [threshold]
-        }
+        # msg = {
+        #     "RequestPush": False,
+        #     "IsReset": False,
+        #     "IsSelfCheck": False,
+        #     "ProbeData": [threshold]
+        # }
 
         user_id = current_user_info.id
-        device_config = DeviceConfig.create_device_config(name, json.dumps(msg), user_id, m.name)
+        device_config = DeviceConfig.create_device_config(name, json.dumps(threshold), user_id, m.name)
 
         return response(data={
             "id": device_config.id,
@@ -63,15 +63,15 @@ class UpdateIssueConfig(Resource):
                 return response(error="%s不能为空" % metric.metric_display_name)
             threshold[metric.metric_alarm_config_key] = value
 
-        msg = {
-            "RequestPush": False,
-            "IsReset": False,
-            "IsSelfCheck": False,
-            "ProbeData": [threshold]
-        }
+        # msg = {
+        #     "RequestPush": False,
+        #     "IsReset": False,
+        #     "IsSelfCheck": False,
+        #     "ProbeData": [threshold]
+        # }
 
         user_id = current_user_info.id
-        flag = DeviceConfig.update_device_config(config_id, name, json.dumps(msg), user_id, m.name)
+        flag = DeviceConfig.update_device_config(config_id, name, json.dumps(threshold), user_id, m.name)
         if flag == 1:
             return response(data="Success")
         else:

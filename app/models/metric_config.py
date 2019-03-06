@@ -15,7 +15,7 @@ class MetricConfig(db.Model):
     device_model = db.Column(db.ForeignKey("t_device_model.name"))
 
     def __str__(self):
-        return self.key
+        return self.metric_key
 
 
 class MetricConfigSchema(Schema):
@@ -25,5 +25,4 @@ class MetricConfigSchema(Schema):
     metric_alarm_config_key = fields.Str()
     metric_display_name = fields.Str()
     metric_unit = fields.Function(lambda obj: obj.type.type_unit)
-
 
