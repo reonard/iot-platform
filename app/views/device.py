@@ -65,7 +65,8 @@ class DeviceList(Resource):
         q = {}
         for key,v in request.args.items():
             if key in dir(Device):
-                q[key] = v
+                if v:
+                    q[key] = v
         BaseQuery = Device.query.filter_by(**q)
 
         total = BaseQuery.count()
