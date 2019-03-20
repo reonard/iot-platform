@@ -15,3 +15,8 @@ SESSION_USE_SIGNER = True
 SESSION_KEY_PREFIX = 'x-token:'
 PERMANENT_SESSION_LIFETIME = 3600
 SESSION_COOKIE_NAME = 'x-token'
+
+#WX
+APPID = "xxxx"
+SECRET = "xxxx"
+QR_CODE_DIR = r"/app/qr_codes/"
