@@ -1,4 +1,6 @@
 import xlrd
+import urllib.request
+import json
 
 def xls2dict(filepath):
     data = xlrd.open_workbook(filepath)
@@ -14,3 +16,20 @@ def xls2dict(filepath):
             item[title] = value
         dict.append(item)
     return dict
+
+
+def api_request(url, method="GET", body=None):
+    data = None
+
+    try:
+        if method == "GET":
+            data = urllib.request.urlopen(url, timeout=20).read()
+        elif method == "POST":
+            req = urllib.request.Request(url,data=body)
+            response = urllib.request.urlopen(req, timeout=20)
+            data = response.read()
+
+        data = json.loads(data)
+    except:
+        pass
+    return data

@@ -14,6 +14,7 @@ class User(db.Model):
     password = db.Column(db.String(255))
     phone = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
+    openid = db.Column(db.String(255), default="")
 
     permission = db.relationship("UserPermission", lazy="joined", uselist=False)
     issue_version = db.relationship("IssueMsg", backref="user", lazy="joined")
@@ -78,6 +79,12 @@ class User(db.Model):
             return self.role
 
         return None
+
+    @staticmethod
+    def update_user_info(q, v):
+        flag = User.query.filter_by(**q).update(v)
+        db.session.commit()
+        return flag
 
 
 class UserSchema(Schema):
