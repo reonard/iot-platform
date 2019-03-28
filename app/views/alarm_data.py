@@ -14,6 +14,7 @@ from app import db
 from bson import ObjectId
 import json
 import datetime
+from dateutil.relativedelta import relativedelta
 import time
 from app.lib.auth import check_login
 
@@ -127,75 +128,76 @@ class AlarmCount(Resource):
         endDate = request.args.get("endDate")
         unit = request.args.get("unit")
 
-        res = {
-            "x_data":[],
-            "y_data":[]
-        }
+        res = []
 
-        #todo 当前用户所属项目名
-        p = "test"
-
-        if unit == "hour":
+        if unit == "month":
             today = datetime.datetime.today()
-            zeroh = datetime.datetime(today.year, today.month, today.day, 0, 0, 0)
-            for i in range(1,now.hour+1):
-                print (zeroh, endDate)
-                endDate = (zeroh + datetime.timedelta(hours=1))
-                value = len(get_mongo_data(collection=MONGO_ALARM_COLLECTION, start=str(time.mktime(zeroh.timetuple())*1000), \
-                                           end = str(time.mktime(endDate.timetuple())*1000), search={"project": p}))
-                res["x_data"].append(endDate.strftime("%H"))
-                res["y_data"].append(value)
-                zeroh = endDate
+            zeroh = datetime.datetime(today.year, today.month, 1, 0, 0, 0)
+            for i in range(6, 0, -1):
+                startDate = (zeroh - relativedelta(months=i-1))
+                endDate = (startDate + relativedelta(months=1))
+                print (startDate, endDate)
+                value = len(get_mongo_data(collection=MONGO_ALARM_COLLECTION, start=str(time.mktime(startDate.timetuple())*1000), \
+                                           end = str(time.mktime(endDate.timetuple())*1000)))
+                res.append({"name": startDate.strftime("%Y-%m"),"value": value})
+
         elif unit == "day":
-            today = (now-datetime.timedelta(days=6))
-            zerod = datetime.datetime(today.year, today.month, today.day, 0, 0, 0)
-            for i in range(1, 8):
-                endDate = (zerod + datetime.timedelta(days=1))
-                print (zerod,endDate)
+            zerod = datetime.datetime(now.year, now.month, 1, 0, 0, 0)
+            for i in range(0, now.day):
+                startDate = (zerod + datetime.timedelta(days=i))
+                endDate = (startDate + datetime.timedelta(days=1))
+                print (startDate, endDate)
                 value = len(
-                    get_mongo_data(collection=MONGO_ALARM_COLLECTION, start=str(time.mktime(zerod.timetuple()) * 1000),\
-                                   end=str(time.mktime(endDate.timetuple()) * 1000), search={"project": p}))
-                res["x_data"].append(zerod.strftime("%Y-%m-%d"))
-                res["y_data"].append(value)
-                zerod = endDate
+                    get_mongo_data(collection=MONGO_ALARM_COLLECTION, start=str(time.mktime(startDate.timetuple()) * 1000),\
+                                   end=str(time.mktime(endDate.timetuple()) * 1000)))
+                res.append({"name": startDate.strftime("%Y-%m-%d"), "value": value})
         print (res)
         return response(data=res)
+
 
 class AlarmItemCount(Resource):
 
     def get(self):
         #todo 当前用户所属客户
-        customer_name = "pilot"
         data = []
-        for p in Customer.query.filter_by(name=customer_name).one().projects:
-            project_name = p.name
-            objs = db.session.query(Alarm.alarm_item, func.Count(Alarm.id)).filter(
-                Alarm.device.has(project = project_name)) \
-                .group_by(Alarm.alarm_item).all()
-            for obj in objs:
-                data.append({MetricConfig.query.filter_by(metric_key = obj[0]).one().metric_display_name: obj[1]})
+
+        objs = db.session.query(Alarm.alarm_item, func.Count(Alarm.id)).group_by(Alarm.alarm_item).all()
+        for obj in objs:
+            data.append({"name": MetricConfig.query.filter_by(metric_key=obj[0]).one().metric_display_name, "value": obj[1]})
         print (data)
         return response(data=data)
+
 
 class AlarmCarousel(Resource):
 
     def get(self):
-        #todo 当前用户所属客户
-        customer_name = "pilot"
         data = []
         now = datetime.datetime.today()
         today = datetime.datetime(now.year, now.month, now.day, 0, 0, 0)
-        for p in Customer.query.filter_by(name=customer_name).one().projects:
-            project_name = p.name
-            alarm_list = get_mongo_data(collection=MONGO_ALARM_COLLECTION, start=str(time.mktime(today.timetuple()) * 1000), \
-                                        search={"project": project_name})
-            for alarm in alarm_list:
-                item = {}
-                item["alarmdescription"] = alarm.get("alarmdescription")
-                item["alarm_name"] = Device.query.filter(Device.device_id==alarm.get("deviceid")).one().device_name
-                data.append(item)
+
+        alarm_list = get_mongo_data(collection=MONGO_ALARM_COLLECTION, start=str(time.mktime(today.timetuple()) * 1000))
+        for alarm in alarm_list:
+            item = {}
+            item["alarmdescription"] = alarm.get("alarmdescription")
+            item["alarm_name"] = Device.query.filter(Device.device_id==alarm.get("deviceid")).one().device_name
+            data.append(item)
         print (data)
         return response(data=data)
+
+
+class AlarmArea(Resource):
+
+    def get(self):
+        data = []
+
+        objs = db.session.query(Device.province_name, func.Count(Alarm.id)).join(Alarm). \
+            group_by(Device.province_name).all()
+        objs = sorted(objs, key=lambda x: (x[1], x[0]), reverse=True)[:6]
+        for obj in objs:
+            data.append({"name": obj[0], "value": obj[1]})
+
+        return response(data=data)
+
 
 mod_api.add_resource(AlarmList, '/list/<device_id>')
 mod_api.add_resource(AlarmHandle, '/handle/<alarm_id>')
@@ -204,3 +206,4 @@ mod_api.add_resource(AlarmLatestInfo, '/info/<device_id>')
 mod_api.add_resource(AlarmCount, '/count')
 mod_api.add_resource(AlarmItemCount, '/itemcount')
 mod_api.add_resource(AlarmCarousel, '/carousel')
+mod_api.add_resource(AlarmArea, '/area')

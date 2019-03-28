@@ -130,46 +130,63 @@ class DeviceAlarmList(Resource):
         exclude = ('metric_types',)
         return obj_response(data=devices, schema=DeviceSchema(exclude=exclude), many=True)
 
+
 class DeviceStatusCount(Resource):
     def get(self):
         exclude = ('metric_types',)
+        # data = Device.query(func.count("device_id"))#.group_by("device_status")
 
-        #data = Device.query(func.count("device_id"))#.group_by("device_status")
-        customer_name = "pilot"
         data = []
-        for p in Customer.query.filter_by(name = customer_name).one().projects:
-            project_name = p.name
-            objs = db.session.query(Device.device_status, func.Count(Device.device_id)).filter(Device.project == project_name)\
-                .group_by(Device.device_status).all()
-            for obj in objs:
-                data.append({DeviceStatusCN.get(obj[0],u"未知"):obj[1]})
+
+        objs = db.session.query(Device.device_status, func.Count(Device.device_id)).\
+            group_by(Device.device_status).all()
+
+        for obj in objs:
+            data.append({DeviceStatusCN.get(obj[0], u"未知"): obj[1]})
         return response(data=data)
+
 
 class DeviceOverview(Resource):
     @login_required
     def get(self):
         exclude = ('metric_types',)
 
-        #data = Device.query(func.count("device_id"))#.group_by("device_status")
-        customer_name = "pilot"
+        # data = Device.query(func.count("device_id"))#.group_by("device_status")
         data = {}
         print ("================")
         print (current_user_info.viewable_projects)
 
-        alarm_sum = len(get_mongo_data(collection=MONGO_ALARM_COLLECTION, search={"customer": customer_name}))
+        alarm_sum = len(get_mongo_data(collection=MONGO_ALARM_COLLECTION))
 
         # project_sum = Project.query.filter_by(customer = customer_name).count()
 
-        device_sum = 0
-        #for p in Customer.query.filter_by(name = customer_name).one().projects:
-        project_name = "pilot"#p.name
-        device_sum += Device.query.filter_by(project=project_name).count()
-        data["alarm_sum"] = alarm_sum
-        # data["project_sum"] = project_sum
-        data["device_sum"] = device_sum
+        breakdown_device_sum = Device.query.filter_by(device_status=4).count()
+        # for p in Customer.query.filter_by(name = customer_name).one().projects:
 
+        device_sum = Device.query.count()
+        data["alarm_sum"] = alarm_sum
+        data["project_sum"] = len(current_user_info.viewable_projects)
+        data["device_sum"] = device_sum
+        data["breakdown_device_sum"] = breakdown_device_sum
 
         return response(data=data)
+
+
+class DeviceArea(Resource):
+    @login_required
+    def get(self):
+        exclude = ('metric_types',)
+
+        # data = Device.query(func.count("device_id"))#.group_by("device_status")
+        data = []
+        objs = db.session.query(Device.city_name, func.Count(Device.device_id)). \
+            group_by(Device.city_name).all()
+
+        for obj in objs:
+            data.append({"name": obj[0], "value": obj[1]})
+
+        return response(data=data)
+
 
 class DeviceImportOne(Resource):
     @login_required
@@ -195,10 +212,11 @@ class DeviceImportOne(Resource):
 
         return response(data={"device_id": device.device_id})
 
+
 class DeviceImportMore(Resource):
     @login_required
     def post(self):
-        #SIM卡号	设备名	设备地址	项目
+        # SIM卡号	设备名	设备地址	项目
 
         data = request.files['file']
         filepath = r"/tmp/devices_%s_%s.xlsx"%(current_user_info.id,time.time())
@@ -227,8 +245,10 @@ class DeviceImportMore(Resource):
 
         return response("ok")
 
+
 mod_api.add_resource(DeviceRegister, '/register/')
 mod_api.add_resource(DeviceList, '/list/')
+mod_api.add_resource(DeviceArea, '/area/')
 mod_api.add_resource(DeviceModelList, '/device_model/list/')
 mod_api.add_resource(DeviceDetail, '/detail/<device_id>/')
 mod_api.add_resource(DeviceAlarmList, '/list/alarm/')

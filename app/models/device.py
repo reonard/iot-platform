@@ -48,6 +48,8 @@ class Device(db.Model):
     mongo_slice = db.Column(db.INTEGER)
     longitude = db.Column(db.String(32))
     latitude = db.Column(db.String(32))
+    province_name = db.Column(db.String(32))
+    city_name = db.Column(db.String(32))
     location = db.Column(db.String(256))
     registry_time = db.Column(db.TIMESTAMP)
     network_status = db.Column(db.String(64))

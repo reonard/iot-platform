@@ -65,6 +65,21 @@ class User(db.Model):
             return [self.permission.customer.name, ]
 
     @property
+    def viewable_projects_id(self):
+
+        if not self.permission:
+            return None
+
+        if self.is_super:
+            return [obj.id for obj in Customer.query.filter_by(type=CustomerType.Project)]
+
+        elif self.is_vendor:
+            return [obj.id for obj in Customer.query.filter_by(type=CustomerType.Project,
+                                                                   parent=self.permission.customer)]
+        elif self.is_project:
+            return [self.permission.customer.id, ]
+
+    @property
     def role(self):
 
         return self.permission.role.name
